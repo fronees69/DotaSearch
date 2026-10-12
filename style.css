@@ -1,4 +1,6 @@
 * {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
 
@@ -16,6 +18,10 @@ h1 {
     text-shadow: 2px 2px 2px grey;
     font-size: 3rem;
     margin-bottom: 8px;
+}
+
+p {
+    padding-bottom: 20px;
 }
 
 input {
@@ -57,11 +63,6 @@ button:disabled {
     background-color: #7a2b2b;
     cursor: not-allowed;
     opacity: 0.7;
-}
-
-#loading {
-    color: #ffb84d;
-    font-style: italic;
 }
 
 #error {
@@ -129,17 +130,19 @@ button:disabled {
 
 .modal-window {
     background-color: #1f1f1f;
+    display: flex;
+    gap: 15px;
+    flex-direction: column;
     border: 1px solid #444;
     border-radius: 12px;
     padding: 24px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    overflow-y: auto;
+    width: 600px;
+    height: 620px;
     position: relative;
     animation: slideUp 0.3s ease-out;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     text-align: left;
+    overflow: hidden;
 }
 
 .modal-close {
@@ -150,7 +153,6 @@ button:disabled {
     color: #aaa;
     cursor: pointer;
     transition: color 0.2s;
-    line-height: 1;
 }
 
 .modal-close:hover {
@@ -166,7 +168,7 @@ button:disabled {
 
 #modalContent h3 {
     color: #fff;
-    margin-top: 20px;
+    padding-bottom: 10px;
 }
 
 .rank-info {
@@ -235,7 +237,25 @@ button:disabled {
     color: #f44336;
 }
 
-/* Анимации */
+.singInButton {
+    display: flex;
+    align-items: center;
+    width: 90px;
+    height: 40px;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+}
+
+.logInButton {
+    align-items: center;
+    width: 90px;
+    height: 40px;
+    position: absolute;
+    right: 115px;
+    top: 15px;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
