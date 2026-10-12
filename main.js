@@ -3,7 +3,6 @@ const playerNameInput = document.getElementById("playerNameInput");
 const results = document.getElementById("results");
 const loading = document.getElementById("loading");
 const error = document.getElementById("error");
-
 const modal = document.getElementById("modal");
 const modalContent = document.getElementById("modalContent");
 const modalClose = document.getElementById("modalClose");
@@ -173,14 +172,11 @@ function showPlayerInfo(profile, matches) {
         const stars = rankTier % 10
         const rankName = rankNames[rankNumber] || "Неизвестный ранг"
 
-        const iconUrl = "https://www.opendota.com/assets/images/dota2/rank_icons/rank_icon_" + rankTier + ".png"
+        const iconUrl = "https://steamstatic.com_" + rankTier + ".png"
 
         const rankImg = document.createElement("img")
         rankImg.src = iconUrl
         rankImg.alt = "Ранг"
-        rankImg.onerror = function () {
-            this.style.display = "none"
-        };
         rankBox.appendChild(rankImg)
 
         const rankTextWrap = document.createElement("div")
@@ -278,3 +274,15 @@ document.onkeydown = function (event) {
         modalContent.replaceChildren()
     }
 }
+
+const singInButton = document.createElement('button')
+singInButton.classList.add('singInButton')
+document.body.append(singInButton)
+singInButton.textContent = "Sing in"
+
+
+const logInButton = document.createElement('button')
+logInButton.classList.add('logInButton')
+document.body.append(logInButton)
+logInButton.textContent = "Log in"
+
