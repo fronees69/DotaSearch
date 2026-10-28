@@ -172,7 +172,7 @@ function showPlayerInfo(profile, matches) {
         const stars = rankTier % 10
         const rankName = rankNames[rankNumber] || "Неизвестный ранг"
 
-        const iconUrl = "https://steamstatic.com_" + rankTier + ".png"
+        const iconUrl = rankName + ".png"
 
         const rankImg = document.createElement("img")
         rankImg.src = iconUrl
@@ -279,6 +279,11 @@ const singInButton = document.createElement('button')
 singInButton.classList.add('singInButton')
 document.body.append(singInButton)
 singInButton.textContent = "Sing in"
+
+// singInWindow = document.createElement('div')
+// singInWindow.classList.add('singInWindow')
+// singInWindow.style.display()
+// document.body.append(singInWindow)
 
 
 const logInButton = document.createElement('button')
