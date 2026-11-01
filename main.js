@@ -128,18 +128,22 @@ function openModal(playerId) {
     loadingText.textContent = "Загрузка..."
     modalContent.appendChild(loadingText)
 
-    fetch("https://api.opendota.com/api/players/" + playerId)
-        .then(function (response) {
-            return response.json()
+    Promise.all([
+        fetch("https://api.opendota.com/api/players/" + playerId).then(function (r) {
+            return r.json()
+        }),
+        fetch("https://api.opendota.com/api/players/" + playerId + "/recentMatches").then(function (r) {
+            return r.json()
+        }),
+        fetch("https://api.opendota.com/api/players/" + playerId + "/wl").then(function (r) {
+            return r.json()
         })
-        .then(function (profile) {
-            return fetch("https://api.opendota.com/api/players/" + playerId + "/recentMatches")
-                .then(function (response) {
-                    return response.json()
-                })
-                .then(function (matches) {
-                    showPlayerInfo(profile, matches)
-                })
+    ])
+        .then(function (responses) {
+            const profile = responses[0]
+            const matches = responses[1]
+            const wl = responses[2]
+            showPlayerInfo(profile, matches, wl)
         })
         .catch(function (err) {
             console.log(err)
@@ -150,7 +154,7 @@ function openModal(playerId) {
         })
 }
 
-function showPlayerInfo(profile, matches) {
+function showPlayerInfo(profile, matches, wl) {
     let nick = "Игрок"
     if (profile.profile && profile.profile.personaname) {
         nick = profile.profile.personaname
@@ -161,6 +165,37 @@ function showPlayerInfo(profile, matches) {
     const title = document.createElement("h2")
     title.textContent = nick
     modalContent.appendChild(title)
+
+    if (wl && (wl.win > 0 || wl.lose > 0)) {
+        const wins = wl.win || 0
+        const loses = wl.lose || 0
+        const total = wins + loses
+        const winRate = total > 0 ? (wins / total) * 100 : 0
+        const isBad = winRate < 50
+        const color = isBad ? "#f44336" : "#4caf50"
+
+        const winrateBox = document.createElement("div")
+        winrateBox.className = "winrate-info"
+
+        const line = document.createElement("div")
+        line.className = "winrate-line"
+
+        const label = document.createTextNode("Процент побед: ")
+        const value = document.createElement("strong")
+        value.style.color = color
+        value.textContent = winRate.toFixed(2) + "%"
+
+        line.appendChild(label)
+        line.appendChild(value)
+
+        const sub = document.createElement("div")
+        sub.className = "winrate-sub"
+        sub.textContent = "Побед: " + wins + " • Поражений: " + loses + " • Всего: " + total
+
+        winrateBox.appendChild(line)
+        winrateBox.appendChild(sub)
+        modalContent.appendChild(winrateBox)
+    }
 
     const rankBox = document.createElement("div")
     rankBox.className = "rank-info"
@@ -177,6 +212,9 @@ function showPlayerInfo(profile, matches) {
         const rankImg = document.createElement("img")
         rankImg.src = iconUrl
         rankImg.alt = "Ранг"
+        rankImg.onerror = function () {
+            this.style.display = "none"
+        }
         rankBox.appendChild(rankImg)
 
         const rankTextWrap = document.createElement("div")
@@ -280,14 +318,77 @@ singInButton.classList.add('singInButton')
 document.body.append(singInButton)
 singInButton.textContent = "Sing in"
 
-// singInWindow = document.createElement('div')
-// singInWindow.classList.add('singInWindow')
-// singInWindow.style.display()
-// document.body.append(singInWindow)
-
-
 const logInButton = document.createElement('button')
 logInButton.classList.add('logInButton')
 document.body.append(logInButton)
 logInButton.textContent = "Log in"
 
+const signInModal = document.createElement("div")
+signInModal.className = "modal-overlay"
+signInModal.id = "signInModal"
+signInModal.style.display = "none"
+
+const signInWindow = document.createElement("div")
+signInWindow.className = "modal-window auth-window"
+
+const signInClose = document.createElement("span")
+signInClose.className = "modal-close"
+signInClose.textContent = "×"
+signInClose.id = "signInClose"
+
+const signInTitle = document.createElement("h2")
+signInTitle.textContent = "Регистрация"
+
+signInWindow.appendChild(signInClose)
+signInWindow.appendChild(signInTitle)
+signInModal.appendChild(signInWindow)
+document.body.appendChild(signInModal)
+
+signInClose.onclick = function () {
+    signInModal.style.display = "none"
+}
+
+signInModal.onclick = function (event) {
+    if (event.target === signInModal) {
+        signInModal.style.display = "none"
+    }
+}
+
+const logInModal = document.createElement("div")
+logInModal.className = "modal-overlay"
+logInModal.id = "logInModal"
+logInModal.style.display = "none"
+
+const logInWindow = document.createElement("div")
+logInWindow.className = "modal-window auth-window"
+
+const logInClose = document.createElement("span")
+logInClose.className = "modal-close"
+logInClose.textContent = "×"
+logInClose.id = "logInClose"
+
+const logInTitle = document.createElement("h2")
+logInTitle.textContent = "Вход"
+
+logInWindow.appendChild(logInClose)
+logInWindow.appendChild(logInTitle)
+logInModal.appendChild(logInWindow)
+document.body.appendChild(logInModal)
+
+logInClose.onclick = function () {
+    logInModal.style.display = "none"
+}
+
+logInModal.onclick = function (event) {
+    if (event.target === logInModal) {
+        logInModal.style.display = "none"
+    }
+}
+
+singInButton.onclick = function () {
+    signInModal.style.display = "flex"
+}
+
+logInButton.onclick = function () {
+    logInModal.style.display = "flex"
+}
