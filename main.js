@@ -331,6 +331,20 @@ signInModal.style.display = "none"
 const signInWindow = document.createElement("div")
 signInWindow.className = "modal-window auth-window"
 
+const signInText1 = document.createElement("p")
+signInText1.textContent = "Введите ник"
+signInText1.classList.add("singInText")
+
+const singInName = document.createElement("input")
+singInName.classList.add("singInInput")
+
+const signInText2 = document.createElement("p")
+signInText2.textContent = "Введите пароль"
+signInText2.classList.add("singInText")
+
+const signInPassword = document.createElement("input")
+signInPassword.classList.add("singInInput")
+
 const signInClose = document.createElement("span")
 signInClose.className = "modal-close"
 signInClose.textContent = "×"
@@ -341,6 +355,10 @@ signInTitle.textContent = "Регистрация"
 
 signInWindow.appendChild(signInClose)
 signInWindow.appendChild(signInTitle)
+signInWindow.appendChild(signInText1)
+signInWindow.appendChild(singInName)
+signInWindow.appendChild(signInText2)
+signInWindow.appendChild(signInPassword)
 signInModal.appendChild(signInWindow)
 document.body.appendChild(signInModal)
 
@@ -392,3 +410,4 @@ singInButton.onclick = function () {
 logInButton.onclick = function () {
     logInModal.style.display = "flex"
 }
+
