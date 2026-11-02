@@ -188,7 +188,6 @@ button:disabled {
     height: 40px;
 }
 
-/* --- Блок процента побед (обычный текст) --- */
 .winrate-info {
     background-color: #2a2a2a;
     border-radius: 8px;
@@ -274,6 +273,19 @@ button:disabled {
     top: 15px;
 }
 
+.singInText {
+    display: flex;
+    font-size: 20px;
+    padding-bottom: 0px;
+    padding-top: 20px;
+}
+
+.singInInput {
+    display: flex;
+    width: 450px;
+    margin-left: 50px;
+}
+
 .logInButton {
     display: flex;
     align-items: center;
@@ -287,8 +299,19 @@ button:disabled {
 
 .logIn {
     width: 400px;
-    height: 400px;
+    height: 300px;
 }
+
+body {
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  }
+  
+  #chartdiv {
+    width: 100%;
+    height: 500px;
+  }
 
 @keyframes fadeIn {
     from { opacity: 0; }
