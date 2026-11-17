@@ -27,7 +27,10 @@ fetch("https://api.opendota.com/api/heroes")
     })
     .then(function (data) {
         for (const hero of data) {
-            heroes[hero.id] = hero.localized_name
+            heroes[hero.id] = {
+                name: hero.localized_name,
+                icon: "https://api.opendota.com" + hero.icon
+            }
         }
     })
     .catch(function (err) {
@@ -177,24 +180,20 @@ function showPlayerInfo(profile, matches, wl) {
         const winrateBox = document.createElement("div")
         winrateBox.className = "winrate-info"
 
-        const line = document.createElement("div")
-        line.className = "winrate-line"
+        const chartDiv = document.createElement("div")
+        chartDiv.className = "winrate-chart"
+        chartDiv.id = "winrate-chart-" + Date.now()
 
-        const label = document.createTextNode("Процент побед: ")
-        const value = document.createElement("strong")
-        value.style.color = color
-        value.textContent = winRate.toFixed(2) + "%"
-
-        line.appendChild(label)
-        line.appendChild(value)
+        winrateBox.appendChild(chartDiv)
 
         const sub = document.createElement("div")
         sub.className = "winrate-sub"
         sub.textContent = "Побед: " + wins + " • Поражений: " + loses + " • Всего: " + total
 
-        winrateBox.appendChild(line)
         winrateBox.appendChild(sub)
         modalContent.appendChild(winrateBox)
+
+        renderWinrateChart(chartDiv.id, winRate, color)
     }
 
     const rankBox = document.createElement("div")
@@ -246,9 +245,11 @@ function showPlayerInfo(profile, matches, wl) {
         for (let i = 0; i < lastMatches.length; i++) {
             const match = lastMatches[i]
 
-            let heroName = heroes[match.hero_id]
-            if (!heroName) {
-                heroName = "Герой #" + match.hero_id
+            let heroName = "Герой #" + match.hero_id
+            let heroIcon = ""
+            if (heroes[match.hero_id]) {
+                heroName = heroes[match.hero_id].name
+                heroIcon = heroes[match.hero_id].icon
             }
 
             let win = false
@@ -270,7 +271,20 @@ function showPlayerInfo(profile, matches, wl) {
 
             const heroSpan = document.createElement("span")
             heroSpan.className = "hero-name"
-            heroSpan.textContent = heroName
+
+            if (heroIcon !== "") {
+                const heroImg = document.createElement("img")
+                heroImg.src = heroIcon
+                heroImg.alt = heroName
+                heroImg.onerror = function () {
+                    this.style.display = "none"
+                }
+                heroSpan.appendChild(heroImg)
+            }
+
+            const heroText = document.createElement("span")
+            heroText.textContent = heroName
+            heroSpan.appendChild(heroText)
 
             const kdaSpan = document.createElement("span")
             kdaSpan.className = "kda"
@@ -294,6 +308,104 @@ function showPlayerInfo(profile, matches, wl) {
     modalContent.appendChild(matchList)
 }
 
+function renderWinrateChart(containerId, winRate, color) {
+    root = am5.Root.new(containerId);
+
+    root.setThemes([
+        am5themes_Animated.new(root)
+    ]);
+
+    chart = root.container.children.push(am5radar.RadarChart.new(root, {
+        panX: false,
+        panY: false,
+        wheelX: "none",
+        wheelY: "none",
+        innerRadius: am5.percent(30),
+        startAngle: -90,
+        endAngle: 270,
+        radius: am5.percent(90)
+    }));
+
+    xRenderer = am5radar.AxisRendererCircular.new(root, {
+        minGridDistance: 30,
+        visible: false
+    });
+
+    xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+        max: 100,
+        min: 0,
+        strictMinMax: true,
+        renderer: xRenderer
+    }));
+
+    yRenderer = am5radar.AxisRendererRadial.new(root, {
+        visible: false
+    });
+
+    yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+        categoryField: "category",
+        renderer: yRenderer
+    }));
+
+    yAxis.data.setAll([
+        { category: "Winrate" }
+    ]);
+
+    bgSeries = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+        name: "Background",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueXField: "full",
+        categoryYField: "category",
+        columnWidth: 1
+    }));
+
+    bgSeries.columns.template.setAll({
+        fill: am5.color(0x3a3a3a),
+        strokeOpacity: 0,
+        cornerRadius: 5
+    });
+
+    bgSeries.data.setAll([
+        { category: "Winrate", full: 100 }
+    ]);
+
+    fgSeries = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+        name: "Winrate",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueXField: "value",
+        categoryYField: "category",
+        columnWidth: 1
+    }));
+
+    fgSeries.columns.template.setAll({
+        fill: am5.color(color),
+        strokeOpacity: 0,
+        cornerRadius: 5,
+        tooltipText: "{value}%"
+    });
+
+    fgSeries.data.setAll([
+        { category: "Winrate", value: winRate }
+    ]);
+
+    var label = chart.plotContainer.children.push(am5.Label.new(root, {
+        text: winRate.toFixed(2) + "%",
+        fontSize: 28,
+        fontWeight: "bold",
+        fill: am5.color(color),
+        centerX: am5.percent(50),
+        centerY: am5.percent(50),
+        x: am5.percent(50),
+        y: am5.percent(50)
+    }));
+
+    chart.appear(1000, 100);
+
+    return root;
+}
+
 modalClose.onclick = function () {
     modal.style.display = "none"
     modalContent.replaceChildren()
@@ -310,6 +422,30 @@ document.onkeydown = function (event) {
     if (event.key === "Escape" && modal.style.display === "flex") {
         modal.style.display = "none"
         modalContent.replaceChildren()
+    }
+}
+
+function getUsers() {
+    try {
+        return JSON.parse(localStorage.getItem("users") || "{}")
+    } catch (e) {
+        return {}
+    }
+}
+
+function saveUsers(users) {
+    localStorage.setItem("users", JSON.stringify(users))
+}
+
+function getCurrentUser() {
+    return localStorage.getItem("currentUser") || ""
+}
+
+function setCurrentUser(name) {
+    if (name) {
+        localStorage.setItem("currentUser", name)
+    } else {
+        localStorage.removeItem("currentUser")
     }
 }
 
@@ -331,20 +467,6 @@ signInModal.style.display = "none"
 const signInWindow = document.createElement("div")
 signInWindow.className = "modal-window auth-window"
 
-const signInText1 = document.createElement("p")
-signInText1.textContent = "Введите ник"
-signInText1.classList.add("singInText")
-
-const singInName = document.createElement("input")
-singInName.classList.add("singInInput")
-
-const signInText2 = document.createElement("p")
-signInText2.textContent = "Введите пароль"
-signInText2.classList.add("singInText")
-
-const signInPassword = document.createElement("input")
-signInPassword.classList.add("singInInput")
-
 const signInClose = document.createElement("span")
 signInClose.className = "modal-close"
 signInClose.textContent = "×"
@@ -353,12 +475,39 @@ signInClose.id = "signInClose"
 const signInTitle = document.createElement("h2")
 signInTitle.textContent = "Регистрация"
 
+const signInText1 = document.createElement("p")
+signInText1.textContent = "Введите ник"
+signInText1.classList.add("singInText")
+
+const signInName = document.createElement("input")
+signInName.classList.add("singInInput")
+signInName.type = "text"
+signInName.placeholder = "Ник"
+
+const signInText2 = document.createElement("p")
+signInText2.textContent = "Введите пароль"
+signInText2.classList.add("singInText")
+
+const signInPassword = document.createElement("input")
+signInPassword.classList.add("singInInput")
+signInPassword.type = "password"
+signInPassword.placeholder = "Пароль"
+
+const signInSubmit = document.createElement("button")
+signInSubmit.textContent = "Зарегистрироваться"
+signInSubmit.classList.add("auth-button")
+
+const signInMessage = document.createElement("p")
+signInMessage.classList.add("auth-message")
+
 signInWindow.appendChild(signInClose)
 signInWindow.appendChild(signInTitle)
 signInWindow.appendChild(signInText1)
-signInWindow.appendChild(singInName)
+signInWindow.appendChild(signInName)
 signInWindow.appendChild(signInText2)
 signInWindow.appendChild(signInPassword)
+signInWindow.appendChild(signInSubmit)
+signInWindow.appendChild(signInMessage)
 signInModal.appendChild(signInWindow)
 document.body.appendChild(signInModal)
 
@@ -369,6 +518,39 @@ signInClose.onclick = function () {
 signInModal.onclick = function (event) {
     if (event.target === signInModal) {
         signInModal.style.display = "none"
+    }
+}
+
+signInSubmit.onclick = function () {
+    const name = signInName.value.trim()
+    const pass = signInPassword.value
+
+    if (name === "" || pass === "") {
+        signInMessage.textContent = "Заполните все поля"
+        return
+    }
+
+    const users = getUsers()
+
+    if (users[name] !== undefined) {
+        signInMessage.textContent = "Такой пользователь уже существует"
+        return
+    }
+
+    users[name] = pass
+    saveUsers(users)
+    setCurrentUser(name)
+
+    signInMessage.textContent = "Регистрация успешна"
+    setTimeout(function () {
+        signInModal.style.display = "none"
+        updateAuthButtons()
+    }, 700)
+}
+
+signInPassword.onkeydown = function (event) {
+    if (event.key === "Enter") {
+        signInSubmit.click()
     }
 }
 
@@ -388,8 +570,39 @@ logInClose.id = "logInClose"
 const logInTitle = document.createElement("h2")
 logInTitle.textContent = "Вход"
 
+const logInText1 = document.createElement("p")
+logInText1.textContent = "Введите ник"
+logInText1.classList.add("singInText")
+
+const logInName = document.createElement("input")
+logInName.classList.add("singInInput")
+logInName.type = "text"
+logInName.placeholder = "Ник"
+
+const logInText2 = document.createElement("p")
+logInText2.textContent = "Введите пароль"
+logInText2.classList.add("singInText")
+
+const logInPassword = document.createElement("input")
+logInPassword.classList.add("singInInput")
+logInPassword.type = "password"
+logInPassword.placeholder = "Пароль"
+
+const logInSubmit = document.createElement("button")
+logInSubmit.textContent = "Войти"
+logInSubmit.classList.add("auth-button")
+
+const logInMessage = document.createElement("p")
+logInMessage.classList.add("auth-message")
+
 logInWindow.appendChild(logInClose)
 logInWindow.appendChild(logInTitle)
+logInWindow.appendChild(logInText1)
+logInWindow.appendChild(logInName)
+logInWindow.appendChild(logInText2)
+logInWindow.appendChild(logInPassword)
+logInWindow.appendChild(logInSubmit)
+logInWindow.appendChild(logInMessage)
 logInModal.appendChild(logInWindow)
 document.body.appendChild(logInModal)
 
@@ -403,11 +616,90 @@ logInModal.onclick = function (event) {
     }
 }
 
-singInButton.onclick = function () {
-    signInModal.style.display = "flex"
+logInSubmit.onclick = function () {
+    const name = logInName.value.trim()
+    const pass = logInPassword.value
+
+    if (name === "" || pass === "") {
+        logInMessage.textContent = "Заполните все поля"
+        return
+    }
+
+    const users = getUsers()
+
+    if (users[name] === undefined) {
+        logInMessage.textContent = "Пользователь не найден"
+        return
+    }
+
+    if (users[name] !== pass) {
+        logInMessage.textContent = "Неверный пароль"
+        return
+    }
+
+    setCurrentUser(name)
+    logInMessage.textContent = "Вход выполнен"
+    setTimeout(function () {
+        logInModal.style.display = "none"
+        updateAuthButtons()
+    }, 700)
 }
 
-logInButton.onclick = function () {
-    logInModal.style.display = "flex"
+logInPassword.onkeydown = function (event) {
+    if (event.key === "Enter") {
+        logInSubmit.click()
+    }
 }
 
+function updateAuthButtons() {
+    const user = getCurrentUser()
+
+    if (user) {
+        singInButton.textContent = user
+        singInButton.style.width = "auto"
+        singInButton.style.minWidth = "90px"
+        singInButton.style.padding = "0 12px"
+        singInButton.onclick = function () {}
+
+        logInButton.textContent = "Log out"
+        logInButton.onclick = function () {
+            setCurrentUser(null)
+            updateAuthButtons()
+        }
+
+        logInButton.style.right = (15 + singInButton.offsetWidth + 10) + "px"
+    } else {
+        singInButton.textContent = "Sign in"
+        singInButton.style.width = "90px"
+        singInButton.style.minWidth = ""
+        singInButton.style.padding = ""
+        singInButton.onclick = function () {
+            signInName.value = ""
+            signInPassword.value = ""
+            signInMessage.textContent = ""
+            signInModal.style.display = "flex"
+        }
+
+        logInButton.textContent = "Log in"
+        logInButton.style.right = "115px"
+        logInButton.onclick = function () {
+            logInName.value = ""
+            logInPassword.value = ""
+            logInMessage.textContent = ""
+            logInModal.style.display = "flex"
+        }
+    }
+}
+
+updateAuthButtons()
+
+document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+        if (signInModal.style.display === "flex") {
+            signInModal.style.display = "none"
+        }
+        if (logInModal.style.display === "flex") {
+            logInModal.style.display = "none"
+        }
+    }
+})
