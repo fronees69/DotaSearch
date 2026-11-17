@@ -196,19 +196,16 @@ button:disabled {
     border-left: 4px solid #ff4d4d;
 }
 
-.winrate-line {
-    font-size: 16px;
-    color: #fff;
-}
-
-.winrate-line strong {
-    font-weight: bold;
+.winrate-chart {
+    width: 100%;
+    height: 220px;
 }
 
 .winrate-sub {
     font-size: 12px;
     color: #aaa;
     margin-top: 6px;
+    text-align: center;
 }
 
 .match-list {
@@ -239,9 +236,21 @@ button:disabled {
 }
 
 .match-item .hero-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-weight: bold;
     color: #fff;
-    min-width: 120px;
+    min-width: 180px;
+}
+
+.match-item .hero-name img {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background-color: #1b1b1b;
 }
 
 .match-item .kda {
@@ -297,21 +306,45 @@ button:disabled {
     top: 15px;
 }
 
-.logIn {
-    width: 400px;
-    height: 300px;
-}
-
 body {
     font-family:
       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
       "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  }
-  
-  #chartdiv {
+}
+
+.auth-window {
+    width: 400px;
+    max-width: 90%;
+    height: auto;
+    padding: 24px;
+}
+
+.auth-window h2 {
+    color: #ff4d4d;
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+    font-size: 22px;
+}
+
+.auth-window .singInInput {
     width: 100%;
-    height: 500px;
-  }
+    margin-left: 0;
+}
+
+.auth-button {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.auth-message {
+    font-size: 13px;
+    color: #ffb84d;
+    min-height: 18px;
+    padding: 0;
+    margin: 8px 0 0 0;
+    text-align: center;
+}
 
 @keyframes fadeIn {
     from { opacity: 0; }
