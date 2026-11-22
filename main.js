@@ -266,8 +266,10 @@ function showPlayerInfo(profile, matches, wl) {
                 resultText = "Победа"
             }
 
-            const item = document.createElement("div")
+            const item = document.createElement("details")
             item.className = "match-item " + resultClass
+
+            const summary = document.createElement("summary")
 
             const heroSpan = document.createElement("span")
             heroSpan.className = "hero-name"
@@ -294,9 +296,27 @@ function showPlayerInfo(profile, matches, wl) {
             resultSpan.className = "result " + resultClass
             resultSpan.textContent = resultText
 
-            item.appendChild(heroSpan)
-            item.appendChild(kdaSpan)
-            item.appendChild(resultSpan)
+            summary.appendChild(heroSpan)
+            summary.appendChild(kdaSpan)
+            summary.appendChild(resultSpan)
+
+            const detailsContent = document.createElement("div")
+            detailsContent.className = "match-details"
+            detailsContent.dataset.loaded = "false"
+
+            const matchId = match.match_id
+            const playerSlot = match.player_slot
+
+            item.appendChild(summary)
+            item.appendChild(detailsContent)
+
+            item.addEventListener("toggle", function () {
+                if (item.open && detailsContent.dataset.loaded === "false") {
+                    detailsContent.dataset.loaded = "true"
+                    loadMatchDetails(matchId, detailsContent, playerSlot)
+                }
+            })
+
             matchList.appendChild(item)
         }
     } else {
@@ -308,14 +328,118 @@ function showPlayerInfo(profile, matches, wl) {
     modalContent.appendChild(matchList)
 }
 
+function loadMatchDetails(matchId, container, playerSlot) {
+    fetch("https://api.opendota.com/api/matches/" + matchId)
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("Ошибка сервера");
+            }
+            return response.json()
+        })
+        .then(function (data) {
+            container.replaceChildren()
+
+            let playerData = null
+            for (let i = 0; i < data.players.length; i++) {
+                if (data.players[i].player_slot === playerSlot) {
+                    playerData = data.players[i]
+                    break
+                }
+            }
+
+            if (!playerData) {
+                const err = document.createElement("p")
+                err.textContent = "Не удалось найти данные игрока в матче"
+                container.appendChild(err)
+                return
+            }
+
+            const rows = [
+                { label: "Длительность", value: formatDuration(data.duration) },
+                { label: "GPM", value: playerData.gold_per_min },
+                { label: "XPM", value: playerData.xp_per_min },
+                { label: "Урон по героям", value: playerData.hero_damage },
+                { label: "Урон по строениям", value: playerData.tower_damage },
+                { label: "Лечение союзников", value: playerData.hero_healing },
+                { label: "Last hits / Denies", value: playerData.last_hits + " / " + playerData.denies },
+                { label: "Нетворс", value: playerData.net_worth },
+                { label: "Уровень", value: playerData.level }
+            ]
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = document.createElement("div")
+                row.className = "match-details-row"
+
+                const label = document.createElement("span")
+                label.textContent = rows[i].label
+
+                const value = document.createElement("span")
+                value.textContent = rows[i].value != null ? rows[i].value : "—"
+
+                row.appendChild(label)
+                row.appendChild(value)
+                container.appendChild(row)
+            }
+
+            const itemsWrap = document.createElement("div")
+            itemsWrap.className = "match-items-list"
+
+            const itemSlots = [
+                "item_0", "item_1", "item_2", "item_3", "item_4", "item_5"
+            ]
+
+            for (let i = 0; i < itemSlots.length; i++) {
+                const itemId = playerData[itemSlots[i]]
+                if (!itemId) {
+                    continue
+                }
+
+                const itemImg = document.createElement("img")
+                itemImg.src = "https://api.opendota.com/apps/dota2/images/items/" + getItemNameById(itemId) + "_lg.png"
+                itemImg.alt = "item"
+                itemImg.onerror = function () {
+                    this.style.display = "none"
+                }
+                itemsWrap.appendChild(itemImg)
+            }
+
+            if (itemsWrap.children.length > 0) {
+                container.appendChild(itemsWrap)
+            }
+        })
+        .catch(function (err) {
+            console.log(err)
+            container.replaceChildren()
+            const errText = document.createElement("p")
+            errText.textContent = "Не удалось загрузить детали матча"
+            container.appendChild(errText)
+        })
+}
+
+function formatDuration(seconds) {
+    if (seconds == null) {
+        return "—"
+    }
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return m + ":" + (s < 10 ? "0" : "") + s
+}
+
+function getItemNameById(itemId) {
+    if (itemId === 0 || itemId == null) {
+        return "empty"
+    }
+    return "item_" + itemId
+}
+
 function renderWinrateChart(containerId, winRate, color) {
-    root = am5.Root.new(containerId);
+    var root = am5.Root.new(containerId);
 
     root.setThemes([
         am5themes_Animated.new(root)
     ]);
 
-    chart = root.container.children.push(am5radar.RadarChart.new(root, {
+    var chart = root.container.children.push(am5radar.RadarChart.new(root, {
         panX: false,
         panY: false,
         wheelX: "none",
@@ -326,23 +450,23 @@ function renderWinrateChart(containerId, winRate, color) {
         radius: am5.percent(90)
     }));
 
-    xRenderer = am5radar.AxisRendererCircular.new(root, {
+    var xRenderer = am5radar.AxisRendererCircular.new(root, {
         minGridDistance: 30,
         visible: false
     });
 
-    xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+    var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
         max: 100,
         min: 0,
         strictMinMax: true,
         renderer: xRenderer
     }));
 
-    yRenderer = am5radar.AxisRendererRadial.new(root, {
+    var yRenderer = am5radar.AxisRendererRadial.new(root, {
         visible: false
     });
 
-    yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+    var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
         categoryField: "category",
         renderer: yRenderer
     }));
@@ -351,7 +475,7 @@ function renderWinrateChart(containerId, winRate, color) {
         { category: "Winrate" }
     ]);
 
-    bgSeries = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+    var bgSeries = chart.series.push(am5radar.RadarColumnSeries.new(root, {
         name: "Background",
         xAxis: xAxis,
         yAxis: yAxis,
@@ -370,7 +494,7 @@ function renderWinrateChart(containerId, winRate, color) {
         { category: "Winrate", full: 100 }
     ]);
 
-    fgSeries = chart.series.push(am5radar.RadarColumnSeries.new(root, {
+    var fgSeries = chart.series.push(am5radar.RadarColumnSeries.new(root, {
         name: "Winrate",
         xAxis: xAxis,
         yAxis: yAxis,
@@ -390,7 +514,7 @@ function renderWinrateChart(containerId, winRate, color) {
         { category: "Winrate", value: winRate }
     ]);
 
-    var label = chart.plotContainer.children.push(am5.Label.new(root, {
+    chart.plotContainer.children.push(am5.Label.new(root, {
         text: winRate.toFixed(2) + "%",
         fontSize: 28,
         fontWeight: "bold",
